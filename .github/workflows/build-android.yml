@@ -21,7 +21,7 @@ jobs:
     env:
       SOURCE_REPOSITORY: masfaiz-code/faizherbals-app
       SOURCE_REF: main
-      PROJECT_PATH: .
+      PROJECT_PATH: faizherbals_toko
 
     steps:
       - name: Checkout build repository
@@ -156,6 +156,6 @@ jobs:
             Source repository: `masfaiz-code/faizherbals-app`
             Source ref: `main`
             Source commit: `${{ needs.build.outputs.source_sha }}`
-            Project path: `.`
+            Project path: `faizherbals_toko`
             Artifact type: `apk`
           files: release-artifact/*

@@ -36,7 +36,7 @@ Tambahkan agar APK release bisa signed tanpa menyimpan keystore di repo source:
 4. Workflow akan otomatis:
    - ambil source dari `masfaiz-code/faizherbals-app`
    - build branch `main`
-   - build project root `.`
+   - build project `faizherbals_toko`
    - menghasilkan APK release signed
    - upload ke Actions artifact dan GitHub Releases
 
