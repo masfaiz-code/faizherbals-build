@@ -113,18 +113,30 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: flutter build apk --release
 
+      - name: Build release AAB
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: flutter build appbundle --release
+
       - name: Prepare artifact metadata
         id: artifact
         shell: bash
         run: |
           set -euo pipefail
-          project_dir="${PROJECT_DIR}"
-          artifact_rel_path="$project_dir/build/app/outputs/flutter-apk/app-release.apk"
+          artifact_dir="$RUNNER_TEMP/faizherbals-artifacts"
+          apk_source="${PROJECT_DIR}/build/app/outputs/flutter-apk/app-release.apk"
+          aab_source="${PROJECT_DIR}/build/app/outputs/bundle/release/app-release.aab"
 
-          test -f "$artifact_rel_path"
+          mkdir -p "$artifact_dir"
+          test -f "$apk_source"
+          test -f "$aab_source"
 
-          artifact_name="faizherbals-main-${{ steps.source_meta.outputs.source_sha }}.apk"
-          echo "artifact_path=$artifact_rel_path" >> "$GITHUB_OUTPUT"
+          apk_name="faizherbals-main-${{ steps.source_meta.outputs.source_sha }}.apk"
+          aab_name="faizherbals-main-${{ steps.source_meta.outputs.source_sha }}.aab"
+          cp "$apk_source" "$artifact_dir/$apk_name"
+          cp "$aab_source" "$artifact_dir/$aab_name"
+
+          artifact_name="faizherbals-main-${{ steps.source_meta.outputs.source_sha }}-android"
+          echo "artifact_path=$artifact_dir" >> "$GITHUB_OUTPUT"
           echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
@@ -157,5 +169,5 @@ jobs:
             Source ref: `main`
             Source commit: `${{ needs.build.outputs.source_sha }}`
             Project path: `faizherbals_toko`
-            Artifact type: `apk`
+            Artifact types: `apk`, `aab`
           files: release-artifact/*
