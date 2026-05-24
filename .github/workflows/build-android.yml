@@ -2,6 +2,25 @@ name: Build Faiz Herbals APK
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_aptoide:
+        description: 'Publish APK ke Aptoide Connect setelah build sukses'
+        type: boolean
+        required: false
+        default: true
+      aptoide_release_mode:
+        description: 'Aptoide release mode'
+        type: choice
+        required: false
+        default: IMMEDIATE
+        options:
+          - IMMEDIATE
+          - MANUAL
+      aptoide_news:
+        description: 'Catatan rilis (locales[id_ID][news]) - kosongkan untuk skip'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -171,3 +190,85 @@ jobs:
             Project path: `faizherbals_toko`
             Artifact types: `apk`, `aab`
           files: release-artifact/*
+
+
+  publish-aptoide:
+    name: Publish APK to Aptoide
+    needs: build
+    if: ${{ inputs.publish_to_aptoide }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: aptoide-artifact
+
+      - name: Locate APK file
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk_path="$(find aptoide-artifact -maxdepth 2 -type f -name '*.apk' | head -n 1)"
+          if [ -z "$apk_path" ]; then
+            echo "No APK file found in artifact directory."
+            ls -laR aptoide-artifact || true
+            exit 1
+          fi
+          echo "Found APK: $apk_path"
+          ls -lh "$apk_path"
+          echo "apk_path=$apk_path" >> "$GITHUB_OUTPUT"
+
+      - name: Submit new version to Aptoide Connect
+        env:
+          APTOIDE_API_KEY: ${{ secrets.APTOIDE_API_KEY }}
+          APK_PATH: ${{ steps.locate.outputs.apk_path }}
+          RELEASE_MODE: ${{ inputs.aptoide_release_mode }}
+          NEWS_TEXT: ${{ inputs.aptoide_news }}
+          SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APTOIDE_API_KEY:-}" ]; then
+            echo "Secret APTOIDE_API_KEY belum diset di repository settings."
+            echo "Generate API key di Aptoide Connect Developer Console -> API Keys"
+            echo "lalu tambahkan sebagai secret APTOIDE_API_KEY di repo ini."
+            exit 1
+          fi
+
+          curl_args=(
+            -X POST
+            --silent
+            --show-error
+            -H "Api-Key: ${APTOIDE_API_KEY}"
+            -F "apk=@${APK_PATH}"
+            -F "releaseMode=${RELEASE_MODE}"
+          )
+
+          if [ -n "${NEWS_TEXT}" ]; then
+            curl_args+=( -F "locales[id_ID][news]=${NEWS_TEXT}" )
+          fi
+
+          response_body="$(mktemp)"
+          http_code="$(curl "${curl_args[@]}" \
+            --output "$response_body" \
+            --write-out '%{http_code}' \
+            https://uploader.catappult.io/api)"
+
+          echo "HTTP status: $http_code"
+          echo "--- Response body ---"
+          cat "$response_body"
+          echo
+          echo "--- End response ---"
+
+          case "$http_code" in
+            2*)
+              echo "Aptoide submission accepted (source commit: ${SOURCE_SHA})."
+              ;;
+            *)
+              echo "Aptoide submission failed (HTTP ${http_code})."
+              exit 1
+              ;;
+          esac

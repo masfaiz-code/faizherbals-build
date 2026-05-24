@@ -28,17 +28,39 @@ Tambahkan agar APK release bisa signed tanpa menyimpan keystore di repo source:
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
+## Secrets Aptoide Connect
+
+Untuk auto-publish APK ke Aptoide Connect setelah build sukses:
+
+- `APTOIDE_API_KEY`: generate di [Aptoide Connect Developer Console](https://connect.aptoide.com) -> Settings -> API Keys. Klik `Generate`, copy key (hanya muncul sekali), simpan sebagai secret di repo ini.
+
+### Pre-requisite di Aptoide Connect
+
+Sebelum job `publish-aptoide` bisa jalan, app `faizherbals_toko` harus sudah didaftarkan di Aptoide Connect:
+
+1. Login ke `connect.aptoide.com`
+2. Klik `Add App` di top nav
+3. Masukkan package name app (lihat `faizherbals_toko/android/app/build.gradle.kts`)
+4. Lengkapi form submission untuk versi pertama (manual upload sekali)
+5. Setelah app live di Aptoide, versi berikutnya akan auto-published lewat workflow ini
+
+> Aptoide hanya menerima `.apk` (bukan `.aab`). Workflow ini sudah upload APK signed yang sama dengan yang dipublish ke GitHub Release.
+
 ## Cara menjalankan build
 
 1. Buka tab `Actions`
 2. Pilih workflow `Build Faiz Herbals APK`
-3. Klik `Run workflow`
+3. Klik `Run workflow` dan atur input:
+   - `publish_to_aptoide` (default: `true`) - centang untuk auto-publish ke Aptoide
+   - `aptoide_release_mode` (default: `IMMEDIATE`) - `IMMEDIATE` = langsung review, `MANUAL` = perlu approve manual di console Aptoide
+   - `aptoide_news` (opsional) - catatan rilis untuk locale `id_ID`, misal `Perbaikan bug login`
 4. Workflow akan otomatis:
    - ambil source dari `masfaiz-code/faizherbals-app`
    - build branch `main`
    - build project `faizherbals_toko`
    - menghasilkan APK release signed
    - upload ke Actions artifact dan GitHub Releases
+   - submit APK ke Aptoide Connect via Uploader API (kalau toggle aktif)
 
 ## Catatan keamanan
 
