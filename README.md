@@ -11,7 +11,27 @@ Repo ini dipakai sebagai runner publik untuk GitHub Actions tanpa membuka source
 ## Workflow tersedia
 
 - `.github/workflows/build-android.yml` untuk build APK release satu klik
-- Trigger saat ini hanya `workflow_dispatch` agar secret tidak terekspos lewat PR publik
+- `.github/workflows/deploy-pages.yml` untuk deploy halaman download ke GitHub Pages
+- Trigger build hanya `workflow_dispatch` agar secret tidak terekspos lewat PR publik
+
+## Halaman download (GitHub Pages)
+
+Landing page di `pages/` menampilkan **APK terbaru** dari GitHub Releases (bukan Actions artifact).
+
+URL (setelah Pages aktif):
+
+```
+https://masfaiz-code.github.io/faizherbals-build/
+```
+
+### Aktifkan GitHub Pages (sekali saja)
+
+1. Buka repo → **Settings** → **Pages**
+2. **Source**: pilih **GitHub Actions**
+3. Push ke `main` (atau jalankan workflow `Deploy GitHub Pages` manual)
+4. Tunggu job deploy selesai, lalu buka URL di atas
+
+Halaman fetch `GET /repos/masfaiz-code/faizherbals-build/releases/latest` di browser, lalu pakai asset `.apk` dari release. Repo harus **public** agar API + download APK bisa diakses tanpa login.
 
 ## Secrets yang wajib
 
